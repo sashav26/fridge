@@ -11,4 +11,5 @@ structure:
 what works so far:
 * fastapi, backend for image processing is perfect
 * can upload image to swift, will get read and updated in fastapi + mysql db
+* is not hosted to heroku because my wifi is slow and heroku CLI taking forever rn
 
