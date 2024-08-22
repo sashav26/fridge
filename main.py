@@ -1,6 +1,9 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, UploadFile, File
+import shutil
+import os
 from pydantic import BaseModel
 import sqlite3
+import subprocess
 
 app = FastAPI()
 
@@ -49,6 +52,24 @@ def calculate_totals():
     conn.close()
 
     return {"total_price": total_price, "total_items": total_items}
+
+@app.post("/upload/")
+async def upload_image(file: UploadFile = File(...)):
+    upload_dir = os.path.join(os.path.dirname(__file__), 'images')
+    os.makedirs(upload_dir, exist_ok = True)
+
+    file_path = os.path.join(upload_dir, file.filename)
+
+    with open(file_path, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+
+    result = subprocess.run(["python3", "backend.py"], capture_output = True, text = True)
+
+    if result.returncode != 0:
+        return {"status": "error", "message": result. stderr}
+
+
+    return {"status": "success", "filename": file.filename}
 
 if __name__ == "__main__":
     import uvicorn

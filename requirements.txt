@@ -23,6 +23,7 @@ pydantic==2.8.2
 pydantic_core==2.20.1
 pytesseract==0.3.13
 python-dateutil==2.9.0.post0
+python-multipart==0.0.9
 pytz==2024.1
 PyYAML==6.0.2
 regex==2024.7.24
