@@ -6,7 +6,7 @@ goal: swift app hosted on supabase
 
 
 structure: 
-* backend.py calls config, database, image inference files to extract data from receipt images and store to mysql
+* backend.py calls config, database, gpt, donut_base files to extract data from receipt images and store to mysql
 * main.py makes API using fastapi and sql queries
 * swift app wireframe half-done, working on new features rn
 
