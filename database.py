@@ -9,22 +9,17 @@ def setup_database():
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             item_name TEXT,
             cost REAL,
-            quantity INTEGER,
+            quantity REAL,  
+            units TEXT,     
             transaction_date TEXT
         )
     ''')
     conn.commit()
     return conn, cursor
 
-import re
-
 def save_to_database(extracted_data, cursor, conn):
     for item in extracted_data.get("line_items", []):
         item_name = item.get("item_name", "Unknown Item")
-
-        # Remove leading numbers from the item name
-        item_name = re.sub(r'^\d+\s*', '', item_name)
-
         item_value = item.get("item_value", "").replace("$", "").strip()
 
         if not item_value:
@@ -37,15 +32,16 @@ def save_to_database(extracted_data, cursor, conn):
             print(f"Skipping item with invalid price: {item_name}, {item_value}")
             continue
 
-        quantity = int(item.get("item_quantity", 1))
+        quantity = item.get("item_quantity", 1)
+        units = item.get("item_units", "each")  # Default to "each" if no units are provided
         transaction_date = extracted_data.get("date", "Unknown Date")
 
-        print(f"Inserting: {item_name}, {cost}, {quantity}, {transaction_date}")
+        print(f"Inserting: {item_name}, {cost}, {quantity} {units}, {transaction_date}")
         
         cursor.execute('''
-            INSERT INTO Transactions (item_name, cost, quantity, transaction_date)
-            VALUES (?, ?, ?, ?)
-        ''', (item_name, cost, quantity, transaction_date))
+            INSERT INTO Transactions (item_name, cost, quantity, units, transaction_date)
+            VALUES (?, ?, ?, ?, ?)
+        ''', (item_name, cost, quantity, units, transaction_date))
         conn.commit()
 
 def clear_table():
@@ -61,7 +57,6 @@ def clear_table():
     print("Transactions table cleared and auto-increment reset.")
 
     conn.close()
-
 
 def query_database(cursor):
     cursor.execute('SELECT * FROM Transactions')

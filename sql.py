@@ -6,6 +6,7 @@ def main():
     cursor = conn.cursor()
 
     # Call the function to print the transactions table
+
     query_database(cursor)
     conn.close()
 

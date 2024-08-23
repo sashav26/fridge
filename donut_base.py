@@ -1,16 +1,16 @@
 import torch
 import re
+from dotenv import load_dotenv
 from PIL import Image
 from transformers import DonutProcessor, VisionEncoderDecoderModel
+
 
 processor = DonutProcessor.from_pretrained("AdamCodd/donut-receipts-extract")
 model = VisionEncoderDecoderModel.from_pretrained("AdamCodd/donut-receipts-extract")
 model.to(torch.device('cuda:0' if torch.cuda.is_available() else 'cpu'))
 
 def load_and_preprocess_image(image_path: str):
-    """
-    Load an image, convert it to black and white, and preprocess it for the model.
-    """
+    
     image = Image.open(image_path).convert("RGB") 
     pixel_values = processor(image, return_tensors="pt").pixel_values
     return pixel_values
