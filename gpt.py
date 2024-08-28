@@ -2,22 +2,32 @@ from dotenv import load_dotenv
 import openai
 import os
 import re
-import faiss
 import numpy as np
-from sentence_transformers import SentenceTransformer
 
 load_dotenv()
 openai.api_key = os.getenv('OPENAI_API_KEY')
 
-model = SentenceTransformer('all-MiniLM-L6-v2')
+def generate_embedding(text):
+    response = openai.Embedding.create(
+        input=[text],
+        model="text-embedding-ada-002"
+    )
+    return np.array(response['data'][0]['embedding'])
 
-def vectorize_text(text):
-    return model.encode([text])[0]
-
-def create_faiss_index(embedding_dim, embeddings):
-    index = faiss.IndexFlatL2(embedding_dim)
-    index.add(embeddings.astype('float32'))
-    return index
+def classify_or_create_type(ingredient_name, existing_types, existing_embeddings, threshold=0.8):
+    ingredient_embedding = generate_embedding(ingredient_name)
+    similarities = np.dot(existing_embeddings, ingredient_embedding.T)
+    
+    if np.max(similarities) >= threshold:
+        best_match_index = np.argmax(similarities)
+        return existing_types[best_match_index]
+    else:
+        prompt = f"Create a new type for the ingredient: {ingredient_name}."
+        new_type = openai_chat_completion(prompt)
+        existing_types.append(new_type)
+        new_type_embedding = generate_embedding(new_type)
+        existing_embeddings = np.vstack([existing_embeddings, new_type_embedding])
+        return new_type
 
 def openai_chat_completion(prompt):
     response = openai.ChatCompletion.create(
@@ -29,19 +39,6 @@ def openai_chat_completion(prompt):
     )
     return response.choices[0].message['content'].strip()
 
-def classify_or_create_type(ingredient_name, existing_types, index, threshold=0.8):
-    ingredient_vector = vectorize_text(ingredient_name).astype('float32')
-    D, I = index.search(np.array([ingredient_vector]), 1)
-    if D[0][0] < threshold:
-        return existing_types[I[0][0]]
-    else:
-        prompt = f"Create a new type for the ingredient: {ingredient_name}."
-        new_type = openai_chat_completion(prompt)
-        existing_types.append(new_type)
-        new_type_embedding = vectorize_text(new_type).astype('float32')
-        index.add(np.array([new_type_embedding]))
-        return new_type
-
 def adjust_quantity_units(item_name, item_quantity):
     prompt = f"The item is described as: {item_name}. The detected quantity is: {item_quantity}. Provide the correct quantity and units."
     quantity_units = openai_chat_completion(prompt)
@@ -50,12 +47,12 @@ def adjust_quantity_units(item_name, item_quantity):
         return float(match.group(1)), match.group(2)
     return float(item_quantity), "each"
 
-def process_donut_output(donut_output, existing_types, index):
+def process_donut_output(donut_output, existing_types, existing_embeddings):
     processed_data = []
     for item in donut_output.get("line_items", []):
         item_name = item.get("item_name", "Unknown Item")
         detected_quantity = item.get("item_quantity", "1")
-        classified_type = classify_or_create_type(item_name, existing_types, index)
+        classified_type = classify_or_create_type(item_name, existing_types, existing_embeddings)
         quantity, units = adjust_quantity_units(item_name, detected_quantity)
         item["item_quantity"] = quantity
         item["item_units"] = units
