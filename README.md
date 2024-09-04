@@ -23,4 +23,7 @@ working on:
 * algorithms, hashmaps for speed
 * UX bottleneck at quantity inputting --> maybe NLP fixes quantities too?
 * hosting comes last
+
+
+* remove id attribute from sql db, eventually help with duplicates
   
